@@ -7,3 +7,4 @@ models
 examples
 traffic-signs-data.zip
 data
+__pycache__
