@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.utils import shuffle
 
 class NN:
-    def __init__(self, epochs=10, batch_size=128, learning_rate=0.001):
+    def __init__(self, epochs=10, batch_size=128, learning_rate=0.001, name="nn"):
         self.epochs = epochs
         self.batch_size = batch_size
         self.learning_rate = learning_rate

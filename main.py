@@ -1,8 +1,7 @@
 import pickle
 import numpy as np
-import cv2
-from sklearn.utils import shuffle
 from nn import NN
+from image import pre_process
 import tensorflow as tf
 
 training_file = "data/train.p"
@@ -21,15 +20,9 @@ X_train, y_train = train['features'], train['labels']
 X_valid, y_valid = valid['features'], valid['labels']
 X_test, y_test = test['features'], test['labels']
 
-def normalize(img):
-    return (img - 128) / 128
-
-def grayscale(img):
-    return np.sum(img/3, axis=2, keepdims=True)
-
-X_train = [normalize(grayscale(x)) for x in X_train]
-X_valid = [normalize(grayscale(x)) for x in X_valid]
-X_test = [normalize(grayscale(x)) for x in X_test]
+X_train = pre_process(X_train)
+X_valid = pre_process(X_valid)
+X_test = pre_process(X_test)
 
 network = NN()
 network.add_train_data(X_train, y_train)
