@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import cv2
 from sklearn.utils import shuffle
-from networks import nn
+from nn import NN
 import tensorflow as tf
 
 training_file = "data/train.p"
@@ -27,55 +27,60 @@ def normalize(img):
 def grayscale(img):
     return np.sum(img/3, axis=2, keepdims=True)
 
-gray = grayscale(X_train[0])
 X_train = [normalize(grayscale(x)) for x in X_train]
 X_valid = [normalize(grayscale(x)) for x in X_valid]
 X_test = [normalize(grayscale(x)) for x in X_test]
 
-x = tf.placeholder(tf.float32, (None, 32, 32, 1))
-y = tf.placeholder(tf.int32, (None))
-one_hot_y = tf.one_hot(y, 43)
-keep_prob = tf.placeholder(tf.float32)
+network = NN()
+network.add_train_data(X_train, y_train)
+network.add_test_data(X_test, y_test)
+network.add_validation_data(X_valid, y_valid)
 
-rate = 0.001
-batch_size = 256
-epochs = 200
+network.add_layers([
+    network.conv_layer(1, 32),
+    network.max_pool(),
+    network.conv_layer(32, 64),
+    network.max_pool(),
+    network.flatten(),
+    network.fc_layer(4096, 1024),
+    network.dropout(),
+    network.fc_layer(1024, 400),
+    network.dropout(),
+    network.fc_layer(400, 43)
+])
 
-logits = nn(x, keep_prob)
+network.build(num_labels=43)
 
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
-loss_operation = tf.reduce_mean(cross_entropy)
-optimizer = tf.train.AdamOptimizer(learning_rate = rate)
-training_operation = optimizer.minimize(loss_operation)
+network.train()
 
-correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
-accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-saver = tf.train.Saver()
+""" Training...
+EPOCH 1
+Validation Accuracy = 0.663
 
-def evaluate(X_data, y_data, batch_size):
-    num_examples = len(X_data)
-    total_accuracy = 0
-    sess = tf.get_default_session()
-    for offset in range(0, num_examples, batch_size):
-        batch_x, batch_y = X_data[offset:offset+batch_size], y_data[offset:offset+batch_size]
-        accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.0})
-        total_accuracy += (accuracy * len(batch_x))
-    return total_accuracy / num_examples
+EPOCH 2
+Validation Accuracy = 0.858
 
+EPOCH 3
+Validation Accuracy = 0.897
 
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    num_examples = len(X_train)
-    
-    print("Training...")
-    for i in range(epochs):
-        X_train, y_train = shuffle(X_train, y_train)
-        for offset in range(0, num_examples, batch_size):
-            end = offset + batch_size
-            batch_x, batch_y = X_train[offset:end], y_train[offset:end]
-            sess.run(training_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5})
-            
-        validation_accuracy = evaluate(X_valid, y_valid, batch_size)
-        print("EPOCH {}".format(i+1))
-        print("Validation Accuracy = {:.3f}".format(validation_accuracy))
-        print()
+EPOCH 4
+Validation Accuracy = 0.925
+
+EPOCH 5
+Validation Accuracy = 0.930
+
+EPOCH 6
+Validation Accuracy = 0.934
+
+EPOCH 7
+Validation Accuracy = 0.931
+
+EPOCH 8
+Validation Accuracy = 0.953
+
+EPOCH 9
+Validation Accuracy = 0.950
+
+EPOCH 10
+Validation Accuracy = 0.948 """
+
