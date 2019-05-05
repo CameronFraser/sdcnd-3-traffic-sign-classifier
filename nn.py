@@ -9,6 +9,7 @@ class NN:
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.accuracy_history = []
+        self.layers = []
 
     def add_train_data(self, X_train, y_train):
         self.X_train = X_train
@@ -22,11 +23,31 @@ class NN:
         self.X_test = X_test
         self.y_test = y_test
     
-    def add_layers(self, layers):
-        self.layers = layers
-    
     def add_layer(self, layer):
         self.layers.append(layer)
+    
+    def add_configuration(self, config, input_size):
+        height, width, current_input = input_size
+        for layer in config:
+            if layer['type'] == 'conv':
+                self.add_layer(self.conv_layer(current_input, layer['filters'], layer['ksize'], layer['stride']))
+                current_input = layer['filters']
+                print(height, width, current_input)
+            elif layer['type'] == 'max_pool':
+                self.add_layer(self.max_pool(layer['ksize'], layer['stride']))
+                height //= layer['stride'][0]
+                width //= layer['stride'][1]
+                print(height, width, current_input)
+            elif layer['type'] == 'flatten':
+                self.add_layer(self.flatten())
+                current_input = (current_input * height * width)
+                print(current_input)
+            elif layer['type'] == 'dropout':
+                self.add_layer(self.dropout())
+            elif layer['type'] == 'fc':
+                self.add_layer(self.fc_layer(current_input, layer['units']))
+                current_input = layer['units']
+                print(current_input)
     
     def build(self, num_labels):
         self.x = tf.placeholder(tf.float32, (None, 32, 32, 1))
@@ -76,6 +97,9 @@ class NN:
             total_accuracy += (accuracy * len(batch_x))
         return total_accuracy / num_examples
 
+    def test(self):
+        pass
+
 
     def init_weights(self, shape):
         mu = 0
@@ -85,18 +109,18 @@ class NN:
     def init_biases(self, size):
         return tf.Variable(tf.zeros(size))
 
-    def conv_layer(self, size_in, size_out, strides=[1, 1, 1, 1], name="conv"):
-        W = self.init_weights([5, 5, size_in, size_out])
+    def conv_layer(self, size_in, size_out, ksize, strides, name="conv"):
+        W = self.init_weights(ksize + [size_in, size_out])
         b = self.init_biases(size_out)
-        return lambda x: tf.nn.relu(tf.add(tf.nn.conv2d(x, W, strides, padding="SAME"), b))
+        return lambda x: tf.nn.relu(tf.add(tf.nn.conv2d(x, W, [1] + strides + [1], padding="SAME"), b))
 
     def fc_layer(self, size_in, size_out, name="fc"):
         W = self.init_weights([size_in, size_out])
         b = self.init_biases(size_out)
         return lambda x: tf.nn.relu(tf.add(tf.matmul(x, W), b))
     
-    def max_pool(self, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], name="max_pool"):
-        return lambda x: tf.nn.max_pool(x, ksize=ksize, strides=strides, padding="SAME")
+    def max_pool(self, ksize, strides, name="max_pool"):
+        return lambda x: tf.nn.max_pool(x, ksize=[1] + ksize + [1], strides=[1] + strides + [1], padding="SAME")
 
     def flatten(self):
         return lambda x: flatten(x)
