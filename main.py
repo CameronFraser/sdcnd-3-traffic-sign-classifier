@@ -1,10 +1,11 @@
 import pickle
 import numpy as np
 from nn import NN
-from image import pre_process
+from image import pre_process, augment
 import tensorflow as tf
 import itertools
-from collections import OrderedDict 
+from collections import OrderedDict
+from sklearn.utils import shuffle 
 
 training_file = "data/train.p"
 validation_file = "data/valid.p"
@@ -26,6 +27,11 @@ X_train = pre_process(X_train)
 X_valid = pre_process(X_valid)
 X_test = pre_process(X_test)
 
+aug_X, aug_y = augment(X_train, y_train)
+aug_X, aug_y = shuffle(aug_X, aug_y)
+aug_X = pre_process(aug_X)
+
+
 top_5 = []
 
 # Hyperparameters we will iterate over for experiments
@@ -38,21 +44,27 @@ network_configurations = [
     [
         { 'type': 'conv', 'filters': 32, 'ksize': [5, 5], 'stride': [1, 1] },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
+        { 'type': 'relu' },
         { 'type': 'conv', 'filters': 64, 'ksize': [5, 5], 'stride': [1, 1] },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
+        { 'type': 'relu' },
         { 'type': 'flatten' },
         { 'type': 'fc', 'units': 1024 },
         { 'type': 'dropout' },
+        { 'type': 'relu' },
         { 'type': 'fc', 'units': 400 },
         { 'type': 'dropout' },
+        { 'type': 'relu' },
         { 'type': 'fc', 'units': 43 }
     ],
     [
         { 'type': 'conv', 'filters': 16, 'ksize': [5, 5] },
+        { 'type': 'relu' },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
         { 'type': 'flatten' },
         { 'type': 'fc', 'units': 84 },
         { 'type': 'dropout' },
+        { 'type': 'relu' },
         { 'type': 'fc', 'units': 43 }
     ]
 ]
@@ -64,7 +76,7 @@ experiments = list(itertools.product(*hyperparameters))
 print("{} experiments about to run.".format(len(experiments)))
 
 network = NN(epochs=10, batch_size=128)
-network.add_train_data(X_train, y_train)
+network.add_train_data(np.concatenate([X_train, aug_X]), np.concatenate([y_train, aug_y]))
 network.add_test_data(X_test, y_test)
 network.add_validation_data(X_valid, y_valid)
 
@@ -73,4 +85,3 @@ network.add_configuration(network_configurations[0], input_size=X_train[0].shape
 network.build(num_labels=max(y_train) + 1)
 
 network.train()
-

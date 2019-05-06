@@ -48,6 +48,8 @@ class NN:
                 self.add_layer(self.fc_layer(current_input, layer['units']))
                 current_input = layer['units']
                 print(current_input)
+            elif layer['type'] == 'relu':
+                self.add_layer(self.relu())
     
     def build(self, num_labels):
         self.x = tf.placeholder(tf.float32, (None, 32, 32, 1))
@@ -108,16 +110,19 @@ class NN:
     
     def init_biases(self, size):
         return tf.Variable(tf.zeros(size))
+    
+    def relu(self):
+        return lambda x: tf.nn.relu(x)
 
     def conv_layer(self, size_in, size_out, ksize, strides, name="conv"):
         W = self.init_weights(ksize + [size_in, size_out])
         b = self.init_biases(size_out)
-        return lambda x: tf.nn.relu(tf.add(tf.nn.conv2d(x, W, [1] + strides + [1], padding="SAME"), b))
+        return lambda x: tf.add(tf.nn.conv2d(x, W, [1] + strides + [1], padding="SAME"), b)
 
     def fc_layer(self, size_in, size_out, name="fc"):
         W = self.init_weights([size_in, size_out])
         b = self.init_biases(size_out)
-        return lambda x: tf.nn.relu(tf.add(tf.matmul(x, W), b))
+        return lambda x: tf.add(tf.matmul(x, W), b)
     
     def max_pool(self, ksize, strides, name="max_pool"):
         return lambda x: tf.nn.max_pool(x, ksize=[1] + ksize + [1], strides=[1] + strides + [1], padding="SAME")
