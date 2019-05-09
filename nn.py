@@ -27,27 +27,24 @@ class NN:
         self.layers.append(layer)
     
     def add_configuration(self, config, input_size):
+        self.config = config
         height, width, current_input = input_size
         for layer in config:
             if layer['type'] == 'conv':
                 self.add_layer(self.conv_layer(current_input, layer['filters'], layer['ksize'], layer['stride']))
                 current_input = layer['filters']
-                print(height, width, current_input)
             elif layer['type'] == 'max_pool':
                 self.add_layer(self.max_pool(layer['ksize'], layer['stride']))
                 height //= layer['stride'][0]
                 width //= layer['stride'][1]
-                print(height, width, current_input)
             elif layer['type'] == 'flatten':
                 self.add_layer(self.flatten())
                 current_input = (current_input * height * width)
-                print(current_input)
             elif layer['type'] == 'dropout':
                 self.add_layer(self.dropout())
             elif layer['type'] == 'fc':
                 self.add_layer(self.fc_layer(current_input, layer['units']))
                 current_input = layer['units']
-                print(current_input)
             elif layer['type'] == 'relu':
                 self.add_layer(self.relu())
     
@@ -70,7 +67,7 @@ class NN:
         self.accuracy_operation = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
     
 
-    def train(self):
+    def train(self, keep_prob = 0.5):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             num_examples = len(self.X_train)
@@ -81,13 +78,14 @@ class NN:
                 for offset in range(0, num_examples, self.batch_size):
                     end = offset + self.batch_size
                     batch_x, batch_y = self.X_train[offset:end], self.y_train[offset:end]
-                    sess.run(self.training_operation, feed_dict={ self.x: batch_x, self.y: batch_y, self.keep_prob: 0.5})
+                    sess.run(self.training_operation, feed_dict={ self.x: batch_x, self.y: batch_y, self.keep_prob: keep_prob})
                     
                 validation_accuracy = self.evaluate(self.X_valid, self.y_valid)
                 self.accuracy_history.append(validation_accuracy)
                 print("EPOCH {}".format(i+1))
                 print("Validation Accuracy = {:.3f}".format(validation_accuracy))
                 print()
+        return self.accuracy_history
 
     def evaluate(self, X_data, y_data):
         num_examples = len(X_data)
@@ -133,4 +131,9 @@ class NN:
     def dropout(self):
         return lambda x: tf.nn.dropout(x, self.keep_prob)
 
+    def get_string(self):
+        nn_layers = []
+        for layer in self.config:
+            nn_layers.append(layer['type'])
+        return ' --> '.join(nn_layers)
     
