@@ -8,3 +8,5 @@ examples
 traffic-signs-data.zip
 data
 __pycache__
+savednetwork.*
+checkpoint

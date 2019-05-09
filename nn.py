@@ -58,6 +58,7 @@ class NN:
         for layer in self.layers:
             local_x = layer(local_x)
         
+        self.saver = tf.train.Saver()
         self.logits = local_x
         self.cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.one_hot_y, logits=self.logits)
         self.loss_operation = tf.reduce_mean(self.cross_entropy)
@@ -85,6 +86,7 @@ class NN:
                 print("EPOCH {}".format(i+1))
                 print("Validation Accuracy = {:.3f}".format(validation_accuracy))
                 print()
+            self.saver.save(sess, './savednetwork')
         return self.accuracy_history
 
     def evaluate(self, X_data, y_data):
@@ -98,7 +100,12 @@ class NN:
         return total_accuracy / num_examples
 
     def test(self):
-        pass
+        with tf.Session() as sess:
+            self.saver.restore(sess, tf.train.latest_checkpoint('.'))
+
+            test_accuracy = self.evaluate(self.X_test, self.y_test)
+            print("Test Accuracy = {:.3f}".format(test_accuracy))
+            return test_accuracy
 
 
     def init_weights(self, shape):

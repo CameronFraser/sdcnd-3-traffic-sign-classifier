@@ -84,7 +84,6 @@ stats = None
 stat_labels = [
     'elapsed_time_to_train',
     'validation_accuracy',
-    'test_accuracy',
     'data_augmented',
     'learning_rate',
     'batch_size',
@@ -92,10 +91,11 @@ stat_labels = [
     'architecture'
 ]
 
+
 for experiment in experiments:
     augment, rate, batch_size, keep_prob, config = experiment
     start_time = time.time()
-    network = NN(epochs=2, batch_size=batch_size, learning_rate=rate)
+    network = NN(epochs=1, batch_size=batch_size, learning_rate=rate)
     features = np.concatenate([X_train, aug_X]) if augment == 'True' else X_train
     labels = np.concatenate([y_train, aug_y]) if augment == 'True' else y_train
     network.add_train_data(features, labels)
@@ -108,12 +108,15 @@ for experiment in experiments:
     validation_accuracy = network.train(keep_prob=keep_prob)
 
     end_time = time.time()
+
     try:
         stats = pd.read_csv('experiment_stats.csv')
     except:
         stats = pd.DataFrame()
     
-    stat_values = [end_time - start_time, validation_accuracy, 0.1, augment, rate, batch_size, keep_prob, network.get_string()]
+    stat_values = [end_time - start_time, validation_accuracy, augment, rate, batch_size, keep_prob, network.get_string()]
     stat_entry = pd.Series(stat_values, index=stat_labels)
     stats = stats.append(stat_entry, ignore_index=True)
     stats.to_csv('experiment_stats.csv', index = None, header=True)
+
+
