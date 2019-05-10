@@ -33,7 +33,7 @@ aug_X = pre_process(aug_X)
 
 # Hyperparameters we will iterate over for experiments
 data_augmentation = [str(True), str(False)]
-learning_rates = [1e-1, 1e-2, 1e-3, 1e-4]
+learning_rates = [1e-2, 1e-3, 1e-4]
 batch_sizes = [32, 64, 128, 256, 512]
 dropout_keep_prob = [0.3, 0.4, 0.5, 0.6, 0.7]
 
@@ -76,8 +76,6 @@ print("{} experiments about to run.".format(len(experiments)))
 input_size = X_train[0].shape
 num_labels = max(y_train) + 1
 
-experiments = experiments[0:2]
-
 # stats will contain the statistics from the experiments that are ran
 # hyperparameters, total time, accuracy
 stats = None
@@ -91,11 +89,17 @@ stat_labels = [
     'architecture'
 ]
 
+tf.logging.set_verbosity(tf.logging.ERROR)
+
+# seeding the shuffle in case the computer crashes and we need to restart from where we left off
+experiments = shuffle(experiments, random_state=99)
+
+experiments = experiments[201:]
 
 for experiment in experiments:
     augment, rate, batch_size, keep_prob, config = experiment
     start_time = time.time()
-    network = NN(epochs=1, batch_size=batch_size, learning_rate=rate)
+    network = NN(epochs=5, batch_size=batch_size, learning_rate=rate)
     features = np.concatenate([X_train, aug_X]) if augment == 'True' else X_train
     labels = np.concatenate([y_train, aug_y]) if augment == 'True' else y_train
     network.add_train_data(features, labels)
@@ -105,6 +109,7 @@ for experiment in experiments:
     network.add_configuration(config, input_size=input_size)
 
     network.build(num_labels=num_labels)
+    print("Training model with hyperparameters: augmented: {}, rate: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, rate, batch_size, keep_prob, network.get_string()))
     validation_accuracy = network.train(keep_prob=keep_prob)
 
     end_time = time.time()
