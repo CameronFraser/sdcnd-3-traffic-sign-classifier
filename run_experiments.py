@@ -94,7 +94,6 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 # seeding the shuffle in case the computer crashes and we need to restart from where we left off
 experiments = shuffle(experiments, random_state=99)
 
-experiments = experiments[201:]
 
 for experiment in experiments:
     augment, rate, batch_size, keep_prob, config = experiment
