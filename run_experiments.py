@@ -7,6 +7,7 @@ import itertools
 import time
 from sklearn.utils import shuffle 
 import pandas as pd
+import cv2
 
 training_file = "data/train.p"
 validation_file = "data/valid.p"
@@ -23,50 +24,52 @@ X_train, y_train = train['features'], train['labels']
 X_valid, y_valid = valid['features'], valid['labels']
 X_test, y_test = test['features'], test['labels']
 
+aug_X, aug_y = augment(X_train, y_train)
+aug_X, aug_y = shuffle(aug_X, aug_y)
+
 X_train = pre_process(X_train)
 X_valid = pre_process(X_valid)
 X_test = pre_process(X_test)
-
-aug_X, aug_y = augment(X_train, y_train)
-aug_X, aug_y = shuffle(aug_X, aug_y)
 aug_X = pre_process(aug_X)
 
+""" 
 # Hyperparameters we will iterate over for experiments
 data_augmentation = [str(True), str(False)]
-learning_rates = [1e-2, 1e-3, 1e-4]
-batch_sizes = [32, 64, 128, 256, 512]
-dropout_keep_prob = [0.3, 0.4, 0.5, 0.6, 0.7]
+batch_sizes = [32, 64, 128]
+dropout_keep_prob = [0.4, 0.5, 0.6]
+config = [0, 1]
+filters = [[16, 32], [32, 64], [64, 128]]
+ksize = [[1, 1], [2, 2], [3, 3], [4, 4]]
 
-network_configurations = [
-    [
-        { 'type': 'conv', 'filters': 32, 'ksize': [5, 5], 'stride': [1, 1] },
-        { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
-        { 'type': 'relu' },
-        { 'type': 'conv', 'filters': 64, 'ksize': [5, 5], 'stride': [1, 1] },
-        { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
-        { 'type': 'relu' },
-        { 'type': 'flatten' },
-        { 'type': 'fc', 'units': 1024 },
-        { 'type': 'dropout' },
-        { 'type': 'relu' },
-        { 'type': 'fc', 'units': 400 },
-        { 'type': 'dropout' },
-        { 'type': 'relu' },
-        { 'type': 'fc', 'units': 43 }
-    ],
-    [
-        { 'type': 'conv', 'filters': 16, 'ksize': [5, 5], 'stride': [1, 1] },
-        { 'type': 'relu' },
-        { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
-        { 'type': 'flatten' },
-        { 'type': 'fc', 'units': 84 },
-        { 'type': 'dropout' },
-        { 'type': 'relu' },
-        { 'type': 'fc', 'units': 43 }
+def create_network_config(index, filters, ksize):
+    network_configurations = [
+        [
+            { 'type': 'conv', 'filters': filters[0], 'ksize': ksize, 'stride': [1, 1] },
+            { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
+            { 'type': 'relu' },
+            { 'type': 'conv', 'filters': filters[1], 'ksize': ksize, 'stride': [1, 1] },
+            { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
+            { 'type': 'relu' },
+            { 'type': 'flatten' },
+            { 'type': 'fc', 'units': 128 },
+            { 'type': 'dropout' },
+            { 'type': 'relu' },
+            { 'type': 'fc', 'units': 43 }
+        ],
+        [
+            { 'type': 'conv', 'filters': filters[0], 'ksize': ksize, 'stride': [1, 1] },
+            { 'type': 'relu' },
+            { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
+            { 'type': 'flatten' },
+            { 'type': 'fc', 'units': 128 },
+            { 'type': 'dropout' },
+            { 'type': 'relu' },
+            { 'type': 'fc', 'units': 43 }
+        ]
     ]
-]
+    return network_configurations[index]
 
-hyperparameters = [data_augmentation, learning_rates, batch_sizes, dropout_keep_prob, network_configurations]
+hyperparameters = [data_augmentation, batch_sizes, dropout_keep_prob, filters, ksize, config]
 
 # Get every permutation of hyperparameters
 experiments = list(itertools.product(*hyperparameters))
@@ -83,9 +86,10 @@ stat_labels = [
     'elapsed_time_to_train',
     'validation_accuracy',
     'data_augmented',
-    'learning_rate',
     'batch_size',
     'dropout_keep_probability',
+    'conv_filters',
+    'conv_ksize',
     'architecture'
 ]
 
@@ -96,19 +100,19 @@ experiments = shuffle(experiments, random_state=99)
 
 
 for experiment in experiments:
-    augment, rate, batch_size, keep_prob, config = experiment
+    augment, batch_size, keep_prob, filters, ksize, config = experiment
     start_time = time.time()
-    network = NN(epochs=5, batch_size=batch_size, learning_rate=rate)
+    network = NN(epochs=5, batch_size=batch_size, learning_rate=0.001)
     features = np.concatenate([X_train, aug_X]) if augment == 'True' else X_train
     labels = np.concatenate([y_train, aug_y]) if augment == 'True' else y_train
     network.add_train_data(features, labels)
     network.add_test_data(X_test, y_test)
     network.add_validation_data(X_valid, y_valid)
 
-    network.add_configuration(config, input_size=input_size)
+    network.add_configuration(create_network_config(config, filters, ksize), input_size=input_size)
 
     network.build(num_labels=num_labels)
-    print("Training model with hyperparameters: augmented: {}, rate: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, rate, batch_size, keep_prob, network.get_string()))
+    print("Training model with hyperparameters: augmented: {}, batch_size: {}, keep_prob: {}, filters: {}, ksize: {}, config: {}".format(augment, batch_size, keep_prob, filters, ksize, network.get_string()))
     validation_accuracy = network.train(keep_prob=keep_prob)
 
     end_time = time.time()
@@ -118,9 +122,10 @@ for experiment in experiments:
     except:
         stats = pd.DataFrame()
     
-    stat_values = [end_time - start_time, validation_accuracy, augment, rate, batch_size, keep_prob, network.get_string()]
+    stat_values = [end_time - start_time, validation_accuracy, augment, batch_size, keep_prob, filters, ksize, network.get_string()]
     stat_entry = pd.Series(stat_values, index=stat_labels)
     stats = stats.append(stat_entry, ignore_index=True)
     stats.to_csv('experiment_stats.csv', index = None, header=True)
 
 
+ """

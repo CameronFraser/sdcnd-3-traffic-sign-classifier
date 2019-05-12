@@ -8,19 +8,19 @@ def rotate(images, factor=3):
     one_transform = [np.rot90(img, k=1) for img in images]
     two_transform = [np.rot90(img, k=2) for img in images]
     three_transform = [np.rot90(img, k=3) for img in images]
-    return one_transform + two_transform + three_transform
+    return np.concatenate([one_transform, two_transform, three_transform])
 
 def flip(images, factor=3):
     one_transform = [np.fliplr(img) for img in images]
     two_transform = [np.flipud(img) for img in images]
     three_transform = [np.flipud(np.fliplr(img)) for img in images]
-    return one_transform + two_transform + three_transform
+    return np.concatenate([one_transform, two_transform, three_transform])
 
 def roll(images, factor=3):
     one_transform = [np.roll(img, 10) for img in images]
     two_transform = [np.roll(img, 10, axis=0) for img in images]
     three_transform = [np.roll(img, 10, axis=1) for img in images]
-    return one_transform + two_transform + three_transform
+    return np.concatenate([one_transform, two_transform, three_transform])
 
 def get_factors(images, labels):
     label_freq = {}
@@ -45,7 +45,7 @@ def augment(images, labels):
     pipeline = [rotate, flip, roll]
 
     factors = get_factors(images, labels)
-    augmented_X = []
+    augmented_X = None
     augmented_y = []
     for idx, factor in enumerate(factors):
         if factor > 1:
@@ -57,8 +57,11 @@ def augment(images, labels):
                         if labels[i] == idx:
                             filtered_X.append(X)
                     new_X = pipeline[call_idx](filtered_X)
-
-                    augmented_X += new_X
+                    
+                    if augmented_X == None:
+                        augmented_X = new_X
+                    else:
+                        augmented_X = np.concatenate([augmented_X, new_X])
                     augmented_y = np.concatenate([augmented_y, np.repeat(idx, len(new_X))])
                 except IndexError:
                     pass

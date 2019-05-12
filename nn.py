@@ -68,7 +68,7 @@ class NN:
         self.accuracy_operation = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
     
 
-    def train(self, keep_prob = 0.5):
+    def train(self, keep_prob = 0.5, save_name = 'savednetwork'):
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             num_examples = len(self.X_train)
@@ -86,7 +86,7 @@ class NN:
                 print("EPOCH {}".format(i+1))
                 print("Validation Accuracy = {:.3f}".format(validation_accuracy))
                 print()
-            self.saver.save(sess, './savednetwork')
+            self.saver.save(sess, './' + save_name)
         return self.accuracy_history
 
     def evaluate(self, X_data, y_data):
@@ -99,9 +99,9 @@ class NN:
             total_accuracy += (accuracy * len(batch_x))
         return total_accuracy / num_examples
 
-    def test(self):
+    def test(self, save_name):
         with tf.Session() as sess:
-            self.saver.restore(sess, tf.train.latest_checkpoint('.'))
+            self.saver.restore(sess, './' + save_name)
 
             test_accuracy = self.evaluate(self.X_test, self.y_test)
             print("Test Accuracy = {:.3f}".format(test_accuracy))
