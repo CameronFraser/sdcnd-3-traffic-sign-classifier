@@ -32,7 +32,7 @@ X_valid = pre_process(X_valid)
 X_test = pre_process(X_test)
 aug_X = pre_process(aug_X)
 
-""" 
+
 # Hyperparameters we will iterate over for experiments
 data_augmentation = [str(True), str(False)]
 batch_sizes = [32, 64, 128]
@@ -74,14 +74,14 @@ hyperparameters = [data_augmentation, batch_sizes, dropout_keep_prob, filters, k
 # Get every permutation of hyperparameters
 experiments = list(itertools.product(*hyperparameters))
 
-print("{} experiments about to run.".format(len(experiments)))
+
 
 input_size = X_train[0].shape
 num_labels = max(y_train) + 1
 
 # stats will contain the statistics from the experiments that are ran
 # hyperparameters, total time, accuracy
-stats = None
+stats = pd.read_csv('experiment_stats.csv')
 stat_labels = [
     'elapsed_time_to_train',
     'validation_accuracy',
@@ -98,6 +98,8 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 # seeding the shuffle in case the computer crashes and we need to restart from where we left off
 experiments = shuffle(experiments, random_state=99)
 
+experiments = experiments[400:]
+print("{} experiments about to run.".format(len(experiments)))
 
 for experiment in experiments:
     augment, batch_size, keep_prob, filters, ksize, config = experiment
@@ -117,15 +119,7 @@ for experiment in experiments:
 
     end_time = time.time()
 
-    try:
-        stats = pd.read_csv('experiment_stats.csv')
-    except:
-        stats = pd.DataFrame()
-    
     stat_values = [end_time - start_time, validation_accuracy, augment, batch_size, keep_prob, filters, ksize, network.get_string()]
     stat_entry = pd.Series(stat_values, index=stat_labels)
     stats = stats.append(stat_entry, ignore_index=True)
     stats.to_csv('experiment_stats.csv', index = None, header=True)
-
-
- """

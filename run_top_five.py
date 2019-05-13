@@ -46,13 +46,15 @@ experiments = experiments.sort_values(by=['validation_accuracy'], ascending=Fals
 
 top_5 = experiments[:5]
 
-stats = None
+print(top_5)
+""" stats = None
 stat_labels = [
     'elapsed_time_to_train',
     'validation_accuracy',
     'test_accuracy',
     'data_augmented',
-    'learning_rate',
+    'filters',
+    'ksize',
     'batch_size',
     'dropout_keep_probability',
     'architecture'
@@ -61,12 +63,12 @@ stat_labels = [
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 for idx, row in top_5.iterrows():
-    architecture_name, batch_size, augment, keep_prob, _, rate, _ = row
+    architecture_name, batch_size, filters, ksize, augment, keep_prob, _, _ = row
     architecture = [
-        { 'type': 'conv', 'filters': 32, 'ksize': [3, 3], 'stride': [1, 1] },
+        { 'type': 'conv', 'filters': filters[0], 'ksize': ksize, 'stride': [1, 1] },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
         { 'type': 'relu' },
-        { 'type': 'conv', 'filters': 64, 'ksize': [3, 3], 'stride': [1, 1] },
+        { 'type': 'conv', 'filters': filters[1], 'ksize': ksize, 'stride': [1, 1] },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
         { 'type': 'relu' },
         { 'type': 'flatten' },
@@ -74,9 +76,9 @@ for idx, row in top_5.iterrows():
         { 'type': 'dropout' },
         { 'type': 'relu' },
         { 'type': 'fc', 'units': 43 }
-    ]
+]
     start_time = time.time()
-    network = NN(epochs=50, batch_size=int(batch_size), learning_rate=rate)
+    network = NN(epochs=50, batch_size=int(batch_size), learning_rate=0.001)
     features = np.concatenate([X_train, aug_X]) if augment == 'True' else X_train
     labels = np.concatenate([y_train, aug_y]) if augment == 'True' else y_train
     network.add_train_data(features, labels)
@@ -86,7 +88,7 @@ for idx, row in top_5.iterrows():
     network.add_configuration(architecture, input_size=input_size)
 
     network.build(num_labels=num_labels)
-    print("Training model with hyperparameters: augmented: {}, rate: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, rate, batch_size, keep_prob, architecture_name))
+    print("Training model with hyperparameters: augmented: {}, filters: {}, ksize: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, filters, ksize, batch_size, keep_prob, architecture_name))
     validation_accuracy = network.train(keep_prob=keep_prob, save_name="test" + str(idx))
 
     end_time = time.time()
@@ -98,9 +100,9 @@ for idx, row in top_5.iterrows():
     except:
         stats = pd.DataFrame()
     
-    stat_values = [end_time - start_time, validation_accuracy, test_accuracy, augment, rate, batch_size, keep_prob, architecture_name]
+    stat_values = [end_time - start_time, validation_accuracy, test_accuracy, augment, filters, ksize, batch_size, keep_prob, architecture_name]
     stat_entry = pd.Series(stat_values, index=stat_labels)
     stats = stats.append(stat_entry, ignore_index=True)
     stats.to_csv('top_5_stats.csv', index = None, header=True)
 
-    
+     """

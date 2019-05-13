@@ -62,6 +62,7 @@ def augment(images, labels):
                         augmented_X = new_X
                     else:
                         augmented_X = np.concatenate([augmented_X, new_X])
+                    
                     augmented_y = np.concatenate([augmented_y, np.repeat(idx, len(new_X))])
                 except IndexError:
                     pass
