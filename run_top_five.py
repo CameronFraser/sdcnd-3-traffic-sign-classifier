@@ -7,6 +7,7 @@ import itertools
 import time
 from sklearn.utils import shuffle 
 import pandas as pd
+import ast
 
 training_file = "data/train.p"
 validation_file = "data/valid.p"
@@ -46,8 +47,7 @@ experiments = experiments.sort_values(by=['validation_accuracy'], ascending=Fals
 
 top_5 = experiments[:5]
 
-print(top_5)
-""" stats = None
+stats = None
 stat_labels = [
     'elapsed_time_to_train',
     'validation_accuracy',
@@ -64,6 +64,9 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 
 for idx, row in top_5.iterrows():
     architecture_name, batch_size, filters, ksize, augment, keep_prob, _, _ = row
+    print("Training model with hyperparameters: augmented: {}, filters: {}, ksize: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, filters, ksize, batch_size, keep_prob, architecture_name))
+    filters = ast.literal_eval(filters)
+    ksize = ast.literal_eval(ksize)
     architecture = [
         { 'type': 'conv', 'filters': filters[0], 'ksize': ksize, 'stride': [1, 1] },
         { 'type': 'max_pool', 'ksize': [2, 2], 'stride': [2, 2] },
@@ -76,7 +79,7 @@ for idx, row in top_5.iterrows():
         { 'type': 'dropout' },
         { 'type': 'relu' },
         { 'type': 'fc', 'units': 43 }
-]
+    ]
     start_time = time.time()
     network = NN(epochs=50, batch_size=int(batch_size), learning_rate=0.001)
     features = np.concatenate([X_train, aug_X]) if augment == 'True' else X_train
@@ -88,7 +91,6 @@ for idx, row in top_5.iterrows():
     network.add_configuration(architecture, input_size=input_size)
 
     network.build(num_labels=num_labels)
-    print("Training model with hyperparameters: augmented: {}, filters: {}, ksize: {}, batch_size: {}, keep_prob: {}, config: {}".format(augment, filters, ksize, batch_size, keep_prob, architecture_name))
     validation_accuracy = network.train(keep_prob=keep_prob, save_name="test" + str(idx))
 
     end_time = time.time()
@@ -105,4 +107,3 @@ for idx, row in top_5.iterrows():
     stats = stats.append(stat_entry, ignore_index=True)
     stats.to_csv('top_5_stats.csv', index = None, header=True)
 
-     """
