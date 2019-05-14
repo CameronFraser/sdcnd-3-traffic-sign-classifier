@@ -45,7 +45,7 @@ def augment(images, labels):
     pipeline = [rotate, flip, roll]
 
     factors = get_factors(images, labels)
-    augmented_X = None
+    augmented_X = []
     augmented_y = []
     for idx, factor in enumerate(factors):
         if factor > 1:
@@ -58,7 +58,7 @@ def augment(images, labels):
                             filtered_X.append(X)
                     new_X = pipeline[call_idx](filtered_X)
                     
-                    if augmented_X == None:
+                    if len(augmented_X) == 0:
                         augmented_X = new_X
                     else:
                         augmented_X = np.concatenate([augmented_X, new_X])
