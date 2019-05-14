@@ -99,7 +99,11 @@ class NN:
             total_accuracy += (accuracy * len(batch_x))
         return total_accuracy / num_examples
 
-    def test(self, save_name, X = self.X_test, y = self.y_test):
+    def test(self, save_name, X = None, y = None):
+        if X == None:
+            X = self.X_test
+        if y == None:
+            y = self.y_test
         with tf.Session() as sess:
             self.saver.restore(sess, './' + save_name)
 
