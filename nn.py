@@ -101,8 +101,14 @@ class NN:
 
         return total_accuracy / num_examples
     
-    def predict(self, X):
-        return sess.run(self.logits, feed_dict={ self.x: X })
+    def predict(self, X, y):
+        predictions = []
+        with tf.Session() as sess:
+            self.saver.restore(sess, './savednetwork')
+            predictions = sess.run(self.logits, feed_dict={ self.x: X, self.y: y, self.keep_prob: 1.0 })
+        
+        return predictions
+
 
     def test(self, save_name, X = None, y = None):
         if X == None:
