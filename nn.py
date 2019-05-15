@@ -93,11 +93,16 @@ class NN:
         num_examples = len(X_data)
         total_accuracy = 0
         sess = tf.get_default_session()
+        predictions = []
         for offset in range(0, num_examples, self.batch_size):
             batch_x, batch_y = X_data[offset:offset+self.batch_size], y_data[offset:offset+self.batch_size]
             accuracy = sess.run(self.accuracy_operation, feed_dict={ self.x: batch_x, self.y: batch_y, self.keep_prob: 1.0} )
             total_accuracy += (accuracy * len(batch_x))
+
         return total_accuracy / num_examples
+    
+    def predict(self, X):
+        return sess.run(self.logits, feed_dict={ self.x: X })
 
     def test(self, save_name, X = None, y = None):
         if X == None:
